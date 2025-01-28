@@ -66,6 +66,9 @@ class ASensitivity_toolCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
 	float base_damage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
+	float horizontal_sensitivity= 1;
+
 	//Adjustablle float for critical damage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
 	float headshot_damage;

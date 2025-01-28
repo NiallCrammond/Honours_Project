@@ -165,7 +165,7 @@ void ASensitivity_toolCharacter::Look(const FInputActionValue& Value)
 	{
 		// add yaw and pitch input to controller
 		
-		AddControllerYawInput(LookAxisVector.X);
+		AddControllerYawInput(horizontal_sensitivity*LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
 }
