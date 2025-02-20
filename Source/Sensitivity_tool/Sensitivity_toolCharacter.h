@@ -7,6 +7,7 @@
 #include "Scenario_Manager.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
+#include "SPauseMenuWidget.h"
 #include "Sensitivity_toolCharacter.generated.h"
 
 class USpringArmComponent;
@@ -42,6 +43,9 @@ class ASensitivity_toolCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* PauseAction;
+
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
@@ -55,13 +59,30 @@ class ASensitivity_toolCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* InteractAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* NextScenarioAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* PreviousScenarioAction;
+
 	//UI Widget
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<UUserWidget> widgetClass;
+	TSubclassOf<UUserWidget> CrossairWidgetClass;
 
 	UPROPERTY()
-	UUserWidget* widgetInstance;
+	UUserWidget* CrosshairWidgetInstance;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+
+	UUserWidget* PauseMenuWidgetInstance;
+
+	TSharedPtr<SWindow> pauseMenu;
+
+
+public:
 	//Adjustable float for non-critical fire
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
 	float base_damage;
@@ -89,7 +110,9 @@ class ASensitivity_toolCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	float aiming_fov;
 
-	
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void OnPauseMenuShown();
+
 	AScenario_Manager* scenarioManager;
 
 public:
@@ -109,6 +132,9 @@ protected:
 	void AimOut();
 	void Interact();
 	void Fire();
+	void PauseGame();
+	void NextScenario();
+	void PreviousScenario();
 			
 
 protected:

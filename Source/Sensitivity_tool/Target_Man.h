@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/SkeletalMeshActor.h"
+#include "GameFramework/Character.h"
 #include "Target_Man.generated.h"
 
 /**
@@ -13,7 +14,7 @@
 class ATarget_Spawner;
 UCLASS()
 
-class SENSITIVITY_TOOL_API ATarget_Man : public ASkeletalMeshActor
+class SENSITIVITY_TOOL_API ATarget_Man : public ACharacter
 {
 	GENERATED_BODY()
 

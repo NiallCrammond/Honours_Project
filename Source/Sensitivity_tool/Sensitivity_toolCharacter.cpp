@@ -5,6 +5,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/Button.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
@@ -15,6 +17,9 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "MyGameInstance.h"
+#include "Basic_Roaming_NPC.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "PauseMenuWidget.h"
 
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -74,13 +79,25 @@ void ASensitivity_toolCharacter::BeginPlay()
 	//Find Scenario Manager
 	scenarioManager = Cast<AScenario_Manager>(UGameplayStatics::GetActorOfClass(GetWorld(), AScenario_Manager::StaticClass()));
 
-	if (widgetClass)
+	if (CrossairWidgetClass)
 	{
-		widgetInstance = CreateWidget<UUserWidget>(GetWorld(), widgetClass);
+		CrosshairWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), CrossairWidgetClass);
 
-		if (widgetInstance)
+		if (CrosshairWidgetInstance)
 		{
-			widgetInstance->AddToViewport();
+			CrosshairWidgetInstance->AddToViewport();
+		}
+	}
+
+	if (PauseMenuWidgetClass)
+	{
+		PauseMenuWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), PauseMenuWidgetClass);
+		
+		if (PauseMenuWidgetInstance)
+		{
+		UButton* resume_button =Cast<UButton>(PauseMenuWidgetInstance->WidgetTree->FindWidget(FName("Resume_button")));
+		
+		
 		}
 	}
 	
@@ -95,6 +112,8 @@ void ASensitivity_toolCharacter::SetupPlayerInputComponent(UInputComponent* Play
 	// Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
+
+		
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
@@ -123,6 +142,14 @@ void ASensitivity_toolCharacter::SetupPlayerInputComponent(UInputComponent* Play
 
 		//Interact
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ASensitivity_toolCharacter::Interact);
+
+		///Pause
+		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &ASensitivity_toolCharacter::PauseGame);
+
+		EnhancedInputComponent->BindAction(NextScenarioAction, ETriggerEvent::Triggered, this, &ASensitivity_toolCharacter::NextScenario);
+
+		EnhancedInputComponent->BindAction(PreviousScenarioAction, ETriggerEvent::Triggered, this, &ASensitivity_toolCharacter::PreviousScenario);
+
 	}
 	else
 	{
@@ -214,7 +241,7 @@ void ASensitivity_toolCharacter::Interact()
 				AScenario_Manager* scenario_manager = Cast<AScenario_Manager>(HitActor);
 				if (scenario_manager)
 				{
-					scenario_manager->SetScenario(FString("random_man")); //Activate scenario
+					scenario_manager->SetScenario(FString("Tracking_Scenario")); //Activate scenario
 				}
 			}
 		}
@@ -261,6 +288,9 @@ void ASensitivity_toolCharacter::Fire()
 		{
 			if (HitActor->IsA(ATarget_Man::StaticClass())) // Check if the hit actor is a target
 			{
+				FString spatialOffset = FString::Printf(TEXT("Target man hit"));
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, spatialOffset);
+
 				if (scenarioManager)
 				{
 					if (stats)
@@ -301,7 +331,6 @@ void ASensitivity_toolCharacter::Fire()
 
 			}
 			
-
 		}
 	}
 	//If target is not hit calculate spatial offset
@@ -336,4 +365,113 @@ void ASensitivity_toolCharacter::Fire()
 	//DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Red : FColor::Green, false, 1.0f, 0, 2.0f);
 
 
+}
+
+void ASensitivity_toolCharacter::PauseGame()
+{
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC)
+	{
+		bool bIsPaused = UGameplayStatics::IsGamePaused(GetWorld());
+		if (bIsPaused)
+		{
+		PC->SetPause(false);
+
+		if (PauseMenuWidgetInstance)
+		{
+
+			PauseMenuWidgetInstance->RemoveFromViewport();
+			PC->bShowMouseCursor = false;
+		}
+
+		}
+		else
+		{
+		PC->SetPause(true);
+
+		if (!PauseMenuWidgetInstance->IsInViewport())
+		{
+		   if (PauseMenuWidgetInstance && PauseMenuWidgetClass)
+		   {
+				PauseMenuWidgetInstance->AddToViewport();
+			PC->bShowMouseCursor = true;
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(PauseMenuWidgetInstance->TakeWidget());
+			PauseMenuWidgetInstance->SetDesiredFocusWidget("Resume_Button");
+			PauseMenuWidgetInstance->SetKeyboardFocus();
+
+		
+
+		}
+		}
+
+		}
+	}
+}
+
+void ASensitivity_toolCharacter::NextScenario()
+{
+	FVector StartLocation = FollowCamera->GetComponentLocation(); // Get Camera Location
+	FVector ForwardVector = FollowCamera->GetForwardVector(); // Get Forward Direction of Camera
+
+	float RayLength = 100000.0f; // Draw Ray at long distance
+	FVector EndLocation = StartLocation + (ForwardVector * RayLength); // End point of ray
+
+	FHitResult hitResult;
+	FCollisionQueryParams collisionParams;
+
+	collisionParams.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(hitResult, StartLocation, EndLocation, ECC_Visibility, collisionParams);
+
+	if (bHit)
+	{
+		AActor* HitActor = hitResult.GetActor();
+
+		if (HitActor)
+		{
+			if (HitActor->IsA(AScenario_Manager::StaticClass())) // Check if ray collision is with scenario manager
+			{
+				AScenario_Manager* scenario_manager = Cast<AScenario_Manager>(HitActor);
+				if (scenario_manager)
+				{
+					scenario_manager->NextScenario(); //Activate scenario
+				}
+			}
+		}
+	}
+}
+
+void ASensitivity_toolCharacter::PreviousScenario()
+{
+	FVector StartLocation = FollowCamera->GetComponentLocation(); // Get Camera Location
+	FVector ForwardVector = FollowCamera->GetForwardVector(); // Get Forward Direction of Camera
+
+	float RayLength = 100000.0f; // Draw Ray at long distance
+	FVector EndLocation = StartLocation + (ForwardVector * RayLength); // End point of ray
+
+	FHitResult hitResult;
+	FCollisionQueryParams collisionParams;
+
+	collisionParams.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(hitResult, StartLocation, EndLocation, ECC_Visibility, collisionParams);
+
+	if (bHit)
+	{
+		AActor* HitActor = hitResult.GetActor();
+
+		if (HitActor)
+		{
+			if (HitActor->IsA(AScenario_Manager::StaticClass())) // Check if ray collision is with scenario manager
+			{
+				AScenario_Manager* scenario_manager = Cast<AScenario_Manager>(HitActor);
+				if (scenario_manager)
+				{
+					scenario_manager->PreviousScenario(); //Activate scenario
+				}
+			}
+		}
+	}
 }

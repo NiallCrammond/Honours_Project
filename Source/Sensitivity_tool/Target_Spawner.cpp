@@ -60,6 +60,34 @@ ATarget_Man* ATarget_Spawner::spawnTargetInBox()
 	return nullptr;
 }
 
+ATarget_Man* ATarget_Spawner::spawnMovingTargetInBox()
+{
+	if (spawnArea)
+	{
+		FVector BoxOrigin = spawnArea->GetActorLocation();
+		FVector BoxExtent = spawnArea->GetComponentsBoundingBox().GetExtent();
+
+		//Generate random point within a volume
+		float randomX = FMath::RandRange(BoxOrigin.X - BoxExtent.X, BoxOrigin.X + BoxExtent.X);
+		float randomY = FMath::RandRange(BoxOrigin.Y - BoxExtent.Y, BoxOrigin.Y + BoxExtent.Y);
+		float randomZ = FMath::RandRange(BoxOrigin.Z - BoxExtent.Z, BoxOrigin.Z + BoxExtent.Z);
+
+		//Place player at bottom of volume
+		float positionZ = BoxOrigin.Z - BoxExtent.Z;
+
+		FVector randomPoint = FVector(randomX, randomY, positionZ);
+		FActorSpawnParameters spawmParams;
+
+		ATarget_Man* spawnedTarget = GetWorld()->SpawnActor<ATarget_Man>(moving_target_Blueprint, randomPoint, spawnRotation, spawmParams);
+		Targets.Add(spawnedTarget);
+		totalTargetsSpawned++;
+
+		return spawnedTarget;
+	}
+
+	return nullptr;
+}
+
 TArray<ATarget_Man*>& ATarget_Spawner::GetTargets()
 {
 	return Targets;

@@ -23,11 +23,16 @@ public:
 	ATarget_Spawner();
 	void spawnTarget();
 	ATarget_Man* spawnTargetInBox();
+	ATarget_Man* spawnMovingTargetInBox();
+
 
 protected:
 	// Called when the game starts or when spawned
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
 	TSubclassOf<AActor> target_Blueprint;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
+	TSubclassOf<AActor> moving_target_Blueprint;
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Spawning")
 	FVector spawnPoint;

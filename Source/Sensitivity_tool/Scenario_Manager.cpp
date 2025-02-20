@@ -19,6 +19,7 @@ void AScenario_Manager::BeginPlay()
 	//Create instances of Scenarios 
 	first_scenario = new Scenario_Random_Man(_spawner);
 	no_scenario = new Scenario_Null();
+	tracking_scenario = new Tracking_Scenario(_spawner);
 
 	//Set scenario to be No active Scenario
 	base_scenario = no_scenario;
@@ -54,18 +55,46 @@ Scenario_Base* &AScenario_Manager::GetScenario()
 //Set Scenario by String
 void AScenario_Manager::SetScenario(FString scenario_name)
 {
-	if (scenario_name == "random_man")
+
+	if (scenario_index == 0)
 	{
 		base_scenario = first_scenario;
-		
+
+	}
+	else if (scenario_index == 1)
+	{
+		base_scenario = tracking_scenario;
+	}
+	base_scenario->SetUp();
+}
+
+void AScenario_Manager::NextScenario()
+{
+	if (scenario_index + 1 < scenario_names.Num())
+	{
+		scenario_index++;
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("String doesnt match"));
-
+		scenario_index = 0;
 	}
 
-	base_scenario->SetUp();
+	FString index = FString::Printf(TEXT("Scenario Index: %d"), scenario_index);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, index);
+}
+
+void AScenario_Manager::PreviousScenario()
+{
+	if (scenario_index == 0)
+	{
+		scenario_index = scenario_names.Num()-1;
+	}
+	else
+	{
+		scenario_index--;
+	}
+	FString index = FString::Printf(TEXT("Scenario Index: %d"), scenario_index);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, index);
 }
 
 
