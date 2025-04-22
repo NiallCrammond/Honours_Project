@@ -83,12 +83,23 @@ class ASensitivity_toolCharacter : public ACharacter
 
 
 public:
+	float isAiming = false;
+
 	//Adjustable float for non-critical fire
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
 	float base_damage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
-	float horizontal_sensitivity= 1;
+	float Base_Sensitivity= 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
+	float ADS_Sensitivity = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
+	float Left_Stick_Deadzone = 0.05;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
+	float Right_Stick_Deadzone = 0.05;
 
 	//Adjustablle float for critical damage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
@@ -110,8 +121,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	float aiming_fov;
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
-	void OnPauseMenuShown();
 
 	AScenario_Manager* scenarioManager;
 
@@ -136,13 +145,18 @@ protected:
 	void NextScenario();
 	void PreviousScenario();
 			
-
-protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	// To add mapping context
 	virtual void BeginPlay();
+
+	float CalculateADSSensitivity(float sensitivity);
+	float CalculateNormalSensitivity(float sensitivity);
+
+	bool lookCalled = false;
+	float elapsedTime = 0;
+	float continousRotation=0;
 
 public:
 	/** Returns CameraBoom subobject **/

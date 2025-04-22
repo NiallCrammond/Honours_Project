@@ -24,16 +24,16 @@ void Tracking_Scenario::SetUp()
 void Tracking_Scenario::Update(float dt)
 {
 	elapsedTime += dt;
-	cuurentTargetTime += dt;
+	currentTargetTime += dt;
 
-	if (cuurentTargetTime > 2)
+	if (currentTargetTime > 2)
 	{
 		for (auto target : _targets)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Removing Target"));
 			_targets.Remove(target);
 			target->Destroy();
-			elapsedTime = 0;
+			currentTargetTime = 0;
 		}
 	}
 
@@ -41,7 +41,7 @@ void Tracking_Scenario::Update(float dt)
 	if (_targets.Num() < 1)
 	{
 		_targets.Add(_spawner->spawnMovingTargetInBox());
-		cuurentTargetTime = 0;
+		currentTargetTime = 0;
 	}
 }
 

@@ -25,16 +25,44 @@ public:
 	UButton* Resume_Button;
 
 	UPROPERTY(meta = (BindWidget))
-	USlider* Sens_slider;
+	USlider* Base_Sens_Slider;
 
 	UPROPERTY(meta = (BindWidget))
-	UTextBlock* Sensitivity_Value;
+	USlider* ADS_Sens_Slider;
+
+	UPROPERTY(meta = (BindWidget))
+	USlider* Left_Deadzone_Slider;
+
+	UPROPERTY(meta = (BindWidget))
+	USlider* Right_Deadzone_Slider;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* Base_Sensitivity_Value;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* ADS_Sensitivity_Value;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* Left_Deadzone_Value;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* Right_Deadzone_Value;
 
 	UFUNCTION()
 	void OnResumeButtonClicked();
 
 	UFUNCTION()
-	void OnSliderChanged();
+	void OnBaseSensSliderChanged();
+
+	UFUNCTION()
+	void OnADSSensSliderChanged();
+
+	UFUNCTION()
+	void OnLeftDeadzoneChanged();
+
+	UFUNCTION()
+	void OnRightDeadzoneChanged();
+
 	virtual void NativeConstruct() override;
 
 

@@ -6,7 +6,7 @@
 #include "Target_Spawner.h"
 #include "Target_Man.h"
 #include "MyGameInstance.h"
-
+#include "Chest.h"
 
 // Sets default values
 ATarget_Spawner::ATarget_Spawner()
@@ -86,6 +86,33 @@ ATarget_Man* ATarget_Spawner::spawnMovingTargetInBox()
 	}
 
 	return nullptr;
+}
+
+ATarget_Man* ATarget_Spawner::spawnTargetFromChest(AChest* chest)
+{
+		FVector ChestLocation = chest->GetActorLocation();
+		FRotator ChestRotation = chest->GetActorRotation();
+		FVector ChestRightVector = chest->GetActorRightVector();
+
+
+		float Z = ChestLocation.Z;
+		
+		float angle = FMath::RandRange(chest->arc_angle_start, chest->arc_angle_end);
+		float angleRad = FMath::DegreesToRadians(angle);
+
+		FVector SpawnOffset = FVector(FMath::Cos(angleRad) * chest->arc_radius, FMath::Sin(angleRad) * chest->arc_radius, 0);
+			//FVector SpawnLocation(X, Y, Z);
+		FVector SpawnLocation = ChestLocation + (ChestRightVector * chest->arc_radius) + SpawnOffset;
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = chest;
+
+		ATarget_Man* SpawnedTarget = GetWorld()->SpawnActor<ATarget_Man>(chest_scenario_Blueprint, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+
+		Targets.Add(SpawnedTarget);
+		totalTargetsSpawned++;
+		
+		return SpawnedTarget;
 }
 
 TArray<ATarget_Man*>& ATarget_Spawner::GetTargets()

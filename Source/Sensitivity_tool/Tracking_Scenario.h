@@ -11,7 +11,7 @@ public:
 	Tracking_Scenario(ATarget_Spawner* spawner);
 	~Tracking_Scenario();
 
-	float cuurentTargetTime;
+	float currentTargetTime;
 
 	// Inherited via Scenario_Base
 	void SetUp() override;

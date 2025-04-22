@@ -20,6 +20,7 @@
 #include "Basic_Roaming_NPC.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "PauseMenuWidget.h"
+#include "Chest.h"
 
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -92,16 +93,17 @@ void ASensitivity_toolCharacter::BeginPlay()
 	if (PauseMenuWidgetClass)
 	{
 		PauseMenuWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), PauseMenuWidgetClass);
-		
-		if (PauseMenuWidgetInstance)
-		{
-		UButton* resume_button =Cast<UButton>(PauseMenuWidgetInstance->WidgetTree->FindWidget(FName("Resume_button")));
-		
-		
-		}
 	}
-	
-	
+}
+
+float ASensitivity_toolCharacter::CalculateADSSensitivity(float sensitivity)
+{
+	return 51.107f * FMath::Exp(0.1841f * sensitivity);
+}
+
+float ASensitivity_toolCharacter::CalculateNormalSensitivity(float sensitivity)
+{
+	return 99.873 * FMath::Exp(0.2432 * sensitivity);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -190,10 +192,43 @@ void ASensitivity_toolCharacter::Look(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
-		// add yaw and pitch input to controller
-		
-		AddControllerYawInput(horizontal_sensitivity*LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
+		if (isAiming)
+		{
+			// add yaw and pitch input to controller
+			if (LookAxisVector.X > Right_Stick_Deadzone || LookAxisVector.X < -Right_Stick_Deadzone)
+			{
+				float FinalSense = LookAxisVector.X * CalculateADSSensitivity(ADS_Sensitivity) * GetWorld()->GetDeltaSeconds();
+				FRotator NewRotation = GetControlRotation();
+				NewRotation.Yaw += FinalSense;
+				Controller->SetControlRotation(NewRotation);
+			}
+
+			if (Right_Stick_Deadzone < LookAxisVector.Y || -Right_Stick_Deadzone > LookAxisVector.Y)
+			{
+				float FinalSense = LookAxisVector.Y * CalculateADSSensitivity(ADS_Sensitivity) * GetWorld()->GetDeltaSeconds();
+				FRotator NewRotation = GetControlRotation();
+				NewRotation.Pitch -= FinalSense;
+				Controller->SetControlRotation(NewRotation);
+			}
+		}
+		else
+		{
+			if (LookAxisVector.X > Right_Stick_Deadzone || LookAxisVector.X < -Right_Stick_Deadzone)
+			{
+				float FinalSense = LookAxisVector.X * CalculateNormalSensitivity(Base_Sensitivity) * GetWorld()->GetDeltaSeconds();
+				FRotator NewRotation = GetControlRotation();
+				NewRotation.Yaw += FinalSense;
+				Controller->SetControlRotation(NewRotation);
+			}
+
+			if (Right_Stick_Deadzone < LookAxisVector.Y || -Right_Stick_Deadzone > LookAxisVector.Y)
+			{
+				float FinalSense = LookAxisVector.Y * CalculateNormalSensitivity(Base_Sensitivity) * GetWorld()->GetDeltaSeconds();
+				FRotator NewRotation = GetControlRotation();
+				NewRotation.Pitch -= FinalSense;
+				Controller->SetControlRotation(NewRotation);
+			}
+		}
 	}
 }
 
@@ -204,6 +239,7 @@ void ASensitivity_toolCharacter::AimIn()
 	{
 		CameraBoom->SocketOffset = aiming_socket_offset;
 		FollowCamera->FieldOfView = aiming_fov;
+		isAiming = true;
 	}
 }
 
@@ -212,6 +248,7 @@ void ASensitivity_toolCharacter::AimOut()
 {
 	FollowCamera->FieldOfView = default_fov;
 	CameraBoom->SocketOffset = default_socket_offset;
+	isAiming = false;
 }
 
 //Interact function binded to Input Action
@@ -236,12 +273,17 @@ void ASensitivity_toolCharacter::Interact()
 
 		if (HitActor)
 		{
-			if (HitActor->IsA(AScenario_Manager::StaticClass())) // Check if ray collision is with scenario manager
+			if (AScenario_Manager* scenario_manager = Cast<AScenario_Manager>(HitActor))
 			{
-				AScenario_Manager* scenario_manager = Cast<AScenario_Manager>(HitActor);
-				if (scenario_manager)
+				scenario_manager->SetScenario(FString("Tracking_Scenario")); //Activate scenario
+			}
+
+			if (AChest* chest = Cast<AChest>(HitActor))
+			{
+				if (FVector::Dist(GetActorLocation(), chest->GetActorLocation()) <= 400)
 				{
-					scenario_manager->SetScenario(FString("Tracking_Scenario")); //Activate scenario
+				chest->Interact();
+
 				}
 			}
 		}
@@ -269,19 +311,16 @@ void ASensitivity_toolCharacter::Fire()
 
 	if (scenarioManager)
 	{
-	stats = scenarioManager->GetScenario()->GetStats();
-	
-	if (stats)
-	{
-		stats->IncrementShotsFired(); // Increase shots fired
-	}
+		stats = scenarioManager->GetScenario()->GetStats();
 
+		if (stats)
+		{
+			stats->IncrementShotsFired(); // Increase shots fired
+		}
 	}
 
 	if (bHit)
 	{
-
-
 		AActor* HitActor = hitResult.GetActor();
 
 		if (HitActor)
@@ -297,7 +336,6 @@ void ASensitivity_toolCharacter::Fire()
 					{
 						stats->IncrementShotsHit(); //Increment shots
 					}
-
 				}
 				ATarget_Man* hitTarget = Cast<ATarget_Man>(HitActor);
 
@@ -328,9 +366,7 @@ void ASensitivity_toolCharacter::Fire()
 						}
 					}
 				}
-
-			}
-			
+			}		
 		}
 	}
 	//If target is not hit calculate spatial offset
@@ -339,7 +375,6 @@ void ASensitivity_toolCharacter::Fire()
 		ATarget_Man* target = Cast<ATarget_Man>(UGameplayStatics::GetActorOfClass(GetWorld(), ATarget_Man::StaticClass()));
 		if (target)
 		{
-
 			FVector targetPosition = target->GetActorLocation(); // Get the targets location
 			FVector RayDirection = (EndLocation - StartLocation).GetSafeNormal(); // Get normalised direction of ray
 			FVector TargetToPlayer = targetPosition - StartLocation; // Calculate vector from target to player
@@ -356,56 +391,44 @@ void ASensitivity_toolCharacter::Fire()
 			//Log the offset to screen
 			FString spatialOffset = FString::Printf(TEXT("Missed target, closest distance: %f"), distance_x);
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, spatialOffset);
-
-
 		}
-
 	}
-	
-	//DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Red : FColor::Green, false, 1.0f, 0, 2.0f);
-
-
 }
 
 void ASensitivity_toolCharacter::PauseGame()
 {
-
 	APlayerController* PC = Cast<APlayerController>(GetController());
+	
 	if (PC)
 	{
 		bool bIsPaused = UGameplayStatics::IsGamePaused(GetWorld());
 		if (bIsPaused)
 		{
-		PC->SetPause(false);
+			PC->SetPause(false);
 
-		if (PauseMenuWidgetInstance)
-		{
+			if (PauseMenuWidgetInstance)
+			{
 
-			PauseMenuWidgetInstance->RemoveFromViewport();
-			PC->bShowMouseCursor = false;
-		}
-
+				PauseMenuWidgetInstance->RemoveFromViewport();
+				PC->bShowMouseCursor = false;
+			}
 		}
 		else
 		{
-		PC->SetPause(true);
+			PC->SetPause(true);
 
-		if (!PauseMenuWidgetInstance->IsInViewport())
-		{
-		   if (PauseMenuWidgetInstance && PauseMenuWidgetClass)
-		   {
-				PauseMenuWidgetInstance->AddToViewport();
-			PC->bShowMouseCursor = true;
-			FInputModeGameAndUI InputMode;
-			InputMode.SetWidgetToFocus(PauseMenuWidgetInstance->TakeWidget());
-			PauseMenuWidgetInstance->SetDesiredFocusWidget("Resume_Button");
-			PauseMenuWidgetInstance->SetKeyboardFocus();
-
-		
-
-		}
-		}
-
+			if (!PauseMenuWidgetInstance->IsInViewport())
+			{
+				if (PauseMenuWidgetInstance && PauseMenuWidgetClass)
+				{
+					PauseMenuWidgetInstance->AddToViewport();
+					PC->bShowMouseCursor = true;
+					FInputModeGameAndUI InputMode;
+					InputMode.SetWidgetToFocus(PauseMenuWidgetInstance->TakeWidget());
+					PauseMenuWidgetInstance->SetDesiredFocusWidget("Resume_Button");
+					PauseMenuWidgetInstance->SetKeyboardFocus();
+				}
+			}
 		}
 	}
 }

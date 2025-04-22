@@ -11,7 +11,7 @@
 #include "Target_Spawner.generated.h"
 
 class ATarget_Man;
-
+class AChest;
 UCLASS()
 
 class SENSITIVITY_TOOL_API ATarget_Spawner : public AActor
@@ -24,6 +24,7 @@ public:
 	void spawnTarget();
 	ATarget_Man* spawnTargetInBox();
 	ATarget_Man* spawnMovingTargetInBox();
+	ATarget_Man* spawnTargetFromChest(AChest* chest);
 
 
 protected:
@@ -33,6 +34,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
 	TSubclassOf<AActor> moving_target_Blueprint;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
+	TSubclassOf<AActor> chest_scenario_Blueprint;
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Spawning")
 	FVector spawnPoint;
