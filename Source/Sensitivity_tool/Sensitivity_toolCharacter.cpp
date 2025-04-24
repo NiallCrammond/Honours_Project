@@ -662,11 +662,15 @@ void ASensitivity_toolCharacter::Tick(float dt)
 				if(target_velocity > 0 && distance_x > 0)
 				{ 
 					scenarioManager->GetScenario()->GetStats()->TimeOvertracking++;
+					FString over = FString::Printf(TEXT("Time Overtracking: %f"), scenarioManager->GetScenario()->GetStats()->TimeOvertracking);
+					GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, over);
 				}
 				else if (target_velocity > 0 && distance_x < 0) //The target is under tracked
 				{
+
 					scenarioManager->GetScenario()->GetStats()->TimeUndertracking++;
-				
+					FString under = FString::Printf(TEXT("Time Undertracking: %f"), scenarioManager->GetScenario()->GetStats()->TimeUndertracking);
+					GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, under);
 				}
 
 				else if (target_velocity < 0 && distance_x < 0)

@@ -11,6 +11,7 @@
 #include "Target_Spawner.h"
 #include "Chest.h"
 #include "Scenario_Chest.h"
+#include "StatWidget.h"
 #include "Scenario_Manager.generated.h"
 
  USTRUCT()
@@ -75,6 +76,12 @@ public:
 	void NextScenario();
 	void PreviousScenario();
 	
+	FString GetFlickFeedback();
+	FString GetTrackingFeedback();
+	FString GetChestFeedback();
+
+	bool statsDisplayed = false;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UUserWidget> ScenarioTextIcon;
@@ -110,5 +117,11 @@ public:
 	AActor* initial_spawn_point;
 	
 	int scenario_index = 0; 
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UUserWidget> feedbackWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	UUserWidget* feedbackWidgetInstance;
 
 };

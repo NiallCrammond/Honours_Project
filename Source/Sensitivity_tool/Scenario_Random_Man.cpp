@@ -5,6 +5,10 @@
 #include "Target_Spawner.h"
 #include "Target_Man.h"
 #include "MyGameInstance.h"
+#include "StatWidget.h"
+#include "Scenario_Manager.h"
+#include "Kismet/GameplayStatics.h"
+
 #include "Engine/World.h"
 
 Scenario_Random_Man::Scenario_Random_Man(ATarget_Spawner* spawner)
@@ -87,6 +91,17 @@ void Scenario_Random_Man::CleanUp()
 		FString underflickString = FString::Printf(TEXT("Average UnderFlick Percentage: %f"), underflick);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, underflickString);
 
+		//AScenario_Manager* manager = Cast<AScenario_Manager>(UGameplayStatics::GetActorOfClass(_spawner->GetWorld(), AScenario_Manager::StaticClass()));
+		//UStatWidget* MyWidget = Cast<UStatWidget>(manager->feedbackWidgetInstance);
+
+		//
+		//if (MyWidget)
+		//{
+		//	FString FlickFeedback =  manager->GetFlickFeedback();
+		//	MyWidget->ProcessFeedback(FlickFeedback, "Tracking", "Chest Scenario");
+		//}
+
+		//manager->feedbackWidgetInstance->AddToViewport();
 
 	}
 	//Display Single Scenario Stats

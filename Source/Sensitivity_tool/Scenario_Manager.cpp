@@ -63,6 +63,12 @@ void AScenario_Manager::BeginPlay()
 	{
 		ScenarioNameWidget->SetWidgetClass(ScenarioTextIcon);
 	}
+
+	if (feedbackWidgetClass)
+	{
+		feedbackWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), feedbackWidgetClass);
+		
+	}
 }
 
 // Called every frame
@@ -103,6 +109,31 @@ void AScenario_Manager::Tick(float DeltaTime)
 			base_scenario = no_scenario;
 		}
 	}
+
+
+		UMyGameInstance* GameInstance = Cast<UMyGameInstance>(GetWorld()->GetGameInstance());
+
+
+
+		if (GameInstance->Flicking_Rounds_Played && GameInstance->Tracking_Rounds_Played && GameInstance->Chest_Rounds_Played >= 3)
+		{
+			if (!statsDisplayed)
+			{
+				statsDisplayed = true;
+
+				UStatWidget* MyWidget = Cast<UStatWidget>(feedbackWidgetInstance);
+
+				if (MyWidget)
+				{
+					FString FlickFeedback = GetFlickFeedback();
+					FString TrackingFeedback = GetTrackingFeedback();
+					FString ChestFeedback = GetChestFeedback();
+					MyWidget->ProcessFeedback(FlickFeedback, TrackingFeedback, ChestFeedback);
+				}
+
+				feedbackWidgetInstance->AddToViewport();
+			}
+		}
 }
 
 Scenario_Base* &AScenario_Manager::GetScenario()
@@ -163,6 +194,248 @@ void AScenario_Manager::PreviousScenario()
 	}
 	FString index = FString::Printf(TEXT("Scenario Index: %d"), scenario_index);
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, index);
+}
+
+FString AScenario_Manager::GetFlickFeedback()
+{
+	UMyGameInstance* GameInstance = Cast<UMyGameInstance>(_spawner->GetWorld()->GetGameInstance());
+
+	FString feedback;
+
+	int underFlicks = GameInstance->flicking_stats.underFlicks;
+	int overFlicks = GameInstance->flicking_stats.overFlicks;
+	float accuracy = GameInstance->flicking_stats.accuracy;
+	int averageOverflick = GameInstance->flicking_stats.averageOverflick;
+	int averageUnderflick = GameInstance->flicking_stats.averageUnderflick;
+
+	float totalFlicksMissed = overFlicks + underFlicks;
+	float overflickPercentage = 0;
+	float underflickPercentage = 0;
+
+	if (accuracy < 75)
+	{
+
+		if (totalFlicksMissed > 0)
+		{
+			if (overFlicks > 0)
+			{
+				overflickPercentage = ((float)overFlicks / totalFlicksMissed) * 100;
+			}
+
+			if (underFlicks > 0)
+			{
+				underflickPercentage = ((float)underFlicks / totalFlicksMissed) * 100;
+			}
+
+			if (overflickPercentage >= 60)
+			{
+				if (averageOverflick < 10)
+				{
+					feedback = FString::Printf(TEXT("Flick Scenario: Of your missed shots, %.1f%% were overflicked.\nYou tend to overflick by %d units on average.\nTry a decrease by 0 sensitivity."), overflickPercentage, averageOverflick);
+				}
+
+				else if (averageOverflick >= 10 && averageOverflick < 20)
+				{
+					feedback = FString::Printf(TEXT("Flick Scenario: Of your missed shots, %.1f%% were overflicked.\nYou tend to overflick by %d units on average.\nTry a decrease by 1 sensitivity."), overflickPercentage, averageOverflick);
+				}
+				else if (averageOverflick >= 20 && averageOverflick < 30)
+				{
+					feedback = FString::Printf(TEXT("Flick Scenario: Of your missed shots, %.1f%% were overflicked.\nYou tend to overflick by %d units on average.\nTry a decrease by 2 sensitivity."), overflickPercentage, averageOverflick);
+				}
+				else if (averageOverflick >= 30)
+				{
+					feedback = FString::Printf(TEXT("Flick Scenario: Of your missed shots, %.1f%% were overflicked.\nYou tend to overflick by %d units on average.\nTry a decrease by 3 sensitivity."), overflickPercentage, averageOverflick);
+				}
+
+			}
+
+			else if(underflickPercentage >= 60)
+			{
+				if (averageUnderflick < 10)
+				{
+					feedback = FString::Printf(TEXT("Flick Scenario: Of your missed shots, %.1f%% were underflicked.\nYou tend to underflick by %d units on average.\nTry an increase by 0 sensitivity."), underflickPercentage, averageUnderflick);
+
+				}
+				else if (averageUnderflick >= 10 && averageUnderflick < 20)
+				{
+					feedback = FString::Printf(TEXT("Flick Scenario: Of your missed shots, %.1f%% were underflicked.\nYou tend to underflick by %d units on average.\nTry an increase by 1 sensitivity."), underflickPercentage, averageUnderflick);
+				}
+				else if (averageUnderflick >= 20 && averageUnderflick < 30)
+				{
+					feedback = FString::Printf(TEXT("Flick Scenario: Of your missed shots, %.1f%% were underflicked.\nYou tend to underflick by %d units on average.\nTry an increase by 2 sensitivity."), underflickPercentage, averageUnderflick);
+				}
+				else if (averageUnderflick >= 30)
+				{
+					feedback = FString::Printf(TEXT("Flick Scenario: Of your missed shots, %.1f%% were underflicked.\nYou tend to underflick by %d units on average.\nTry an increase by 3 sensitivity."), underflickPercentage, averageUnderflick);
+				}
+			}
+
+			else
+			{
+				feedback = FString::Printf(TEXT("Flick Scenario: Of your missed shots, overflicking vs underflicking was fairly balanced \n We do not advise a change."));
+			}
+		}
+		else
+		{
+			feedback = FString::Printf(TEXT("Flick Scenario: You had perfect first shot accuracy, well done!"));
+		}
+
+	}
+	else
+	{
+		feedback = FString::Printf(TEXT("Flick Scenario: You had a total shot accuracy of %.1f%%.\n Your aim is good and we do not advise a change"), accuracy);
+	}
+	return feedback;
+}
+
+FString AScenario_Manager::GetTrackingFeedback()
+{
+	UMyGameInstance* GameInstance = Cast<UMyGameInstance>(_spawner->GetWorld()->GetGameInstance());
+
+	FString feedback;
+
+	int underFlicks = GameInstance->tracking_stats.underFlicks;
+	int overFlicks = GameInstance->tracking_stats.overFlicks;
+	float accuracy = GameInstance->tracking_stats.accuracy;
+	int timeOverflick = GameInstance->tracking_stats.TimeOvertracking;
+	int timeUnderflick = GameInstance->tracking_stats.TimeUndertracking;
+
+	if (accuracy < 75)
+	{
+		float totalTimeMissed = timeOverflick + timeUnderflick;
+		float overtrackPercentage = 0;
+		float undertrackPercentage = 0;
+
+		if (totalTimeMissed > 0)
+		{
+			overtrackPercentage = ((float)timeOverflick / (float)totalTimeMissed) * 100.f;
+			undertrackPercentage = ((float)timeUnderflick / (float)totalTimeMissed) * 100.f;
+
+			if (overtrackPercentage >= 60 && overtrackPercentage <70)
+			{
+				feedback = FString::Printf(TEXT("Tracking Scenario: Of your time not tracking the target, %.1f%% of the time you overtracked.\n Try a decrease by 1 sensitivity."), overtrackPercentage);
+			}
+			else if (overtrackPercentage >= 70)
+			{
+				feedback = FString::Printf(TEXT("Tracking Scenario: Of your time not tracking the target, %.1f%% of the time you overtracked.\n Try a decrease by 2 sensitivity."), overtrackPercentage);
+
+			}
+			else if (undertrackPercentage >= 60 && undertrackPercentage <70)
+			{
+				feedback = FString::Printf(TEXT("Tracking Scenario: Of your time not tracking the target, %.1f%% of the time you undertracked.\n Try an increase by 1 sensitivity."), undertrackPercentage);
+
+			}
+			else if (undertrackPercentage >= 70)
+			{
+				feedback = FString::Printf(TEXT("Tracking Scenario: Of your time not tracking the target, %.1f%% of the time you undertracked.\n Try an increase by 2 sensitivity."), undertrackPercentage);
+
+			}
+			else
+			{
+				feedback = FString::Printf(TEXT("Tracking Scenario: Of your time not tracking the target, your undertracking vs overtracking was fairly balanced.\n  We do not advise a change."), undertrackPercentage);
+
+			}
+		}
+
+	}	
+	else
+	{
+		feedback = FString::Printf(TEXT("Tracking Scenario: You successfully tracked the target %.1f%% of the time .\n Your aim is good and we do not advise a change."), accuracy);
+	}
+
+	return feedback;
+}
+
+FString AScenario_Manager::GetChestFeedback()
+{
+	UMyGameInstance* GameInstance = Cast<UMyGameInstance>(_spawner->GetWorld()->GetGameInstance());
+
+	FString feedback;
+
+	int underFlicks = GameInstance->chest_stats.underFlicks;
+	int overFlicks = GameInstance->chest_stats.overFlicks;
+	float accuracy = GameInstance->chest_stats.accuracy;
+	int averageOverflick = GameInstance->chest_stats.averageOverflick;
+	int averageUnderflick = GameInstance->chest_stats.averageUnderflick;
+
+	float totalFlicksMissed = overFlicks + underFlicks;
+	float overflickPercentage = 0;
+	float underflickPercentage = 0;
+
+	if (accuracy < 75)
+	{
+
+		if (totalFlicksMissed > 0)
+		{
+			if (overFlicks > 0)
+			{
+				overflickPercentage = ((float)overFlicks / totalFlicksMissed) * 100;
+			}
+
+			if (underFlicks > 0)
+			{
+				underflickPercentage = ((float)underFlicks / totalFlicksMissed) * 100;
+			}
+
+			if (overflickPercentage >= 60)
+			{
+				if (averageOverflick < 10)
+				{
+					feedback = FString::Printf(TEXT("Chest Scenario: Of your missed shots, %.1f%% were overflicked.\nYou tend to overflick by %d units on average.\nTry a decrease by 0 sensitivity."), overflickPercentage, averageOverflick);
+				}
+
+				else if (averageOverflick >= 10 && averageOverflick < 20)
+				{
+					feedback = FString::Printf(TEXT("Chest Scenario: Of your missed shots, %.1f%% were overflicked.\nYou tend to overflick by %d units on average.\nTry a decrease by 1 sensitivity."), overflickPercentage, averageOverflick);
+				}
+				else if (averageOverflick >= 20 && averageOverflick < 30)
+				{
+					feedback = FString::Printf(TEXT("Chest Scenario: Of your missed shots, %.1f%% were overflicked.\nYou tend to overflick by %d units on average.\nTry a decrease by 2 sensitivity."), overflickPercentage, averageOverflick);
+				}
+				else if (averageOverflick >= 30)
+				{
+					feedback = FString::Printf(TEXT("Chest Scenario: Of your missed shots, %.1f%% were overflicked.\nYou tend to overflick by %d units on average.\nTry a decrease by 3 sensitivity."), overflickPercentage, averageOverflick);
+				}
+
+			}
+
+			else if (underflickPercentage >= 60)
+			{
+				if (averageUnderflick < 10)
+				{
+					feedback = FString::Printf(TEXT("Chest Scenario: Of your missed shots, %.1f%% were underflicked.\nYou tend to underflick by %d units on average.\nTry an increase by 0 sensitivity."), underflickPercentage, averageUnderflick);
+
+				}
+				else if (averageUnderflick >= 10 && averageUnderflick < 20)
+				{
+					feedback = FString::Printf(TEXT("Chest Scenario: Of your missed shots, %.1f%% were underflicked.\nYou tend to underflick by %d units on average.\nTry an increase by 1 sensitivity."), underflickPercentage, averageUnderflick);
+				}
+				else if (averageUnderflick >= 20 && averageUnderflick < 30)
+				{
+					feedback = FString::Printf(TEXT("Chest Scenario: Of your missed shots, %.1f%% were underflicked.\nYou tend to underflick by %d units on average.\nTry an increase by 2 sensitivity."), underflickPercentage, averageUnderflick);
+				}
+				else if (averageUnderflick >= 30)
+				{
+					feedback = FString::Printf(TEXT("Chest Scenario: Of your missed shots, %.1f%% were underflicked.\nYou tend to underflick by %d units on average.\nTry an increase by 3 sensitivity."), underflickPercentage, averageUnderflick);
+				}
+			}
+
+			else
+			{
+				feedback = FString::Printf(TEXT("Chest Scenario: Of your missed shots, overflicking vs underflicking was fairly balanced \n We do not advise a change."));
+			}
+		}
+		else
+		{
+			feedback = FString::Printf(TEXT("Chest Scenario: You had perfect first shot accuracy, well done!"));
+		}
+
+	}
+	else
+	{
+		feedback = FString::Printf(TEXT("Chest Scenario: You had a total shot accuracy of %.1f%%.\n Your aim is good and we do not advise a change"), accuracy);
+	}
+	return feedback;
 }
 
 
