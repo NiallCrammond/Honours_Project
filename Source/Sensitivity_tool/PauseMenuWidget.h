@@ -20,8 +20,8 @@ class SENSITIVITY_TOOL_API UPauseMenuWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
+	//Bind UI elements to Blueprint
 	UPROPERTY(meta = (BindWidget))
-
 	UButton* Resume_Button;
 
 	UPROPERTY(meta = (BindWidget))
@@ -48,6 +48,8 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* Right_Deadzone_Value;
 
+
+	//Functions to handle UI logic
 	UFUNCTION()
 	void OnResumeButtonClicked();
 

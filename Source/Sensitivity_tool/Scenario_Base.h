@@ -21,9 +21,10 @@ public:
 	virtual void Update(float dt) = 0;
 	virtual void CleanUp() = 0;
 
-	//Return references to Stats and Targets so access from other classes
+	//Return references to Stats and Targets to access from other classes
 	Scenario_stats*& GetStats();
 	TArray<ATarget_Man*>& GetTargets();
+	
 
 	float GetElapsedTime();
 

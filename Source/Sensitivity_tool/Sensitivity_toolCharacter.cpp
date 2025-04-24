@@ -33,6 +33,7 @@ ASensitivity_toolCharacter::ASensitivity_toolCharacter()
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 		
+	PrimaryActorTick.bCanEverTick = true;
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = true;
 	bUseControllerRotationYaw = true;
@@ -93,6 +94,16 @@ void ASensitivity_toolCharacter::BeginPlay()
 	if (PauseMenuWidgetClass)
 	{
 		PauseMenuWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), PauseMenuWidgetClass);
+	}
+
+	if (RightArrowWidgetClass)
+	{
+		RightArrowWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), RightArrowWidgetClass);
+	}
+
+	if (LeftArrowWidgetClass)
+	{
+		LeftArrowWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), LeftArrowWidgetClass);
 	}
 }
 
@@ -192,14 +203,15 @@ void ASensitivity_toolCharacter::Look(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
+		//Check if player is aimed to scale correct sensitivity
 		if (isAiming)
 		{
 			// add yaw and pitch input to controller
 			if (LookAxisVector.X > Right_Stick_Deadzone || LookAxisVector.X < -Right_Stick_Deadzone)
 			{
-				float FinalSense = LookAxisVector.X * CalculateADSSensitivity(ADS_Sensitivity) * GetWorld()->GetDeltaSeconds();
+				float FinalSense = LookAxisVector.X * CalculateADSSensitivity(ADS_Sensitivity) * GetWorld()->GetDeltaSeconds(); // Return desired turn rate
 				FRotator NewRotation = GetControlRotation();
-				NewRotation.Yaw += FinalSense;
+				NewRotation.Yaw += FinalSense; //Add turn rate to current roation 
 				Controller->SetControlRotation(NewRotation);
 			}
 
@@ -275,7 +287,7 @@ void ASensitivity_toolCharacter::Interact()
 		{
 			if (AScenario_Manager* scenario_manager = Cast<AScenario_Manager>(HitActor))
 			{
-				scenario_manager->SetScenario(FString("Tracking_Scenario")); //Activate scenario
+				scenario_manager->SetScenario(); //Activate scenario
 			}
 
 			if (AChest* chest = Cast<AChest>(HitActor))
@@ -313,7 +325,7 @@ void ASensitivity_toolCharacter::Fire()
 	{
 		stats = scenarioManager->GetScenario()->GetStats();
 
-		if (stats)
+		if (stats && scenarioManager->GetScenario() != scenarioManager->tracking_scenario)
 		{
 			stats->IncrementShotsFired(); // Increase shots fired
 		}
@@ -327,9 +339,6 @@ void ASensitivity_toolCharacter::Fire()
 		{
 			if (HitActor->IsA(ATarget_Man::StaticClass())) // Check if the hit actor is a target
 			{
-				FString spatialOffset = FString::Printf(TEXT("Target man hit"));
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, spatialOffset);
-
 				if (scenarioManager)
 				{
 					if (stats)
@@ -366,31 +375,61 @@ void ASensitivity_toolCharacter::Fire()
 						}
 					}
 				}
+				if (!hasFirstShotAtTargetFired)
+				{
+					hasFirstShotAtTargetFired = true;
+
+				}
 			}		
 		}
 	}
-	//If target is not hit calculate spatial offset
+	//If target is not hit calculate angle offset
 	else
 	{
 		ATarget_Man* target = Cast<ATarget_Man>(UGameplayStatics::GetActorOfClass(GetWorld(), ATarget_Man::StaticClass()));
 		if (target)
-		{
-			FVector targetPosition = target->GetActorLocation(); // Get the targets location
-			FVector RayDirection = (EndLocation - StartLocation).GetSafeNormal(); // Get normalised direction of ray
-			FVector TargetToPlayer = targetPosition - StartLocation; // Calculate vector from target to player
-			float projectionLength = FVector::DotProduct(TargetToPlayer, RayDirection);// Project targetToPlayer vector onto ray direction to find projection length
-			FVector ClosestPointOnRay = StartLocation + RayDirection * projectionLength; // Find closest point on ray using projection length
+		{ 
+			if (scenarioManager->GetScenario() == scenarioManager->first_scenario)
+			{
+				if (scenarioManager && !hasFirstShotAtTargetFired)
+				{
+					//Store the angle required to turn initially and the new angle required to turn in a pair 
+					hasFirstShotAtTargetFired = true;
+					TPair<float, float> angleCorrection;
 
-			//Zero Z values as vertical is not neccesarry 
-			FVector closestPointHoriontal = FVector(ClosestPointOnRay.X, ClosestPointOnRay.Y, 0.0f);
-			FVector targetPositionHorizontal = FVector(targetPosition.X, targetPosition.Y, 0.0f);
+					float playerYaw = GetControlRotation().Yaw;
+					FVector ToTarget = (target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+					float targetYaw = ToTarget.Rotation().Yaw;
 
-			float distance_x = closestPointHoriontal.X - targetPosition.X; //Calculate horizontal x_axis offset
-			float distanceFromTarget = FVector::Distance(closestPointHoriontal, targetPositionHorizontal);
+					float TurnAngle = FMath::UnwindDegrees(targetYaw - playerYaw);
 
-			//Log the offset to screen
-			FString spatialOffset = FString::Printf(TEXT("Missed target, closest distance: %f"), distance_x);
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, spatialOffset);
+					angleCorrection.Key = FMath::UnwindDegrees(angle_required_to_turn);
+					angleCorrection.Value = TurnAngle;
+
+					scenarioManager->GetScenario()->GetStats()->AngleCorrectionHistory.Add(angleCorrection);
+
+				}
+			}
+			else if (scenarioManager->GetScenario() == scenarioManager->chest_scenario)
+			{
+				if (scenarioManager && !hasFirstShotAtTargetFired)
+				{
+
+					hasFirstShotAtTargetFired = true;
+					TPair<float, float> angleCorrection;
+					float playerYaw = GetControlRotation().Yaw;
+					FVector ToTarget = (target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+					float targetYaw = ToTarget.Rotation().Yaw;
+
+					float TurnAngle = FMath::UnwindDegrees(targetYaw - playerYaw);
+
+					angleCorrection.Key = FMath::UnwindDegrees(angle_required_to_turn);
+					angleCorrection.Value = TurnAngle;
+
+					scenarioManager->GetScenario()->GetStats()->AngleCorrectionHistory.Add(angleCorrection);
+
+				}
+			}
 		}
 	}
 }
@@ -402,6 +441,7 @@ void ASensitivity_toolCharacter::PauseGame()
 	if (PC)
 	{
 		bool bIsPaused = UGameplayStatics::IsGamePaused(GetWorld());
+		// Unpause and remove menu from viewport
 		if (bIsPaused)
 		{
 			PC->SetPause(false);
@@ -413,7 +453,7 @@ void ASensitivity_toolCharacter::PauseGame()
 				PC->bShowMouseCursor = false;
 			}
 		}
-		else
+		else // Pause and add menu to viewport
 		{
 			PC->SetPause(true);
 
@@ -424,6 +464,7 @@ void ASensitivity_toolCharacter::PauseGame()
 					PauseMenuWidgetInstance->AddToViewport();
 					PC->bShowMouseCursor = true;
 					FInputModeGameAndUI InputMode;
+					//Set the resume Btton to be focused when menu opens
 					InputMode.SetWidgetToFocus(PauseMenuWidgetInstance->TakeWidget());
 					PauseMenuWidgetInstance->SetDesiredFocusWidget("Resume_Button");
 					PauseMenuWidgetInstance->SetKeyboardFocus();
@@ -495,6 +536,155 @@ void ASensitivity_toolCharacter::PreviousScenario()
 					scenario_manager->PreviousScenario(); //Activate scenario
 				}
 			}
+		}
+	}
+}
+
+void ASensitivity_toolCharacter::Tick(float dt)
+{
+	FVector StartLocation = FollowCamera->GetComponentLocation(); //Get camera location
+	FVector ForwardVector = FollowCamera->GetForwardVector(); // Get forward vector of camera 
+
+	float RayLength = 100000.0f; // draw ray at far distance
+	FVector EndLocation = StartLocation + (ForwardVector * RayLength); // get end point of ray
+
+	FHitResult hitResult;
+	FCollisionQueryParams collisionParams;
+
+	collisionParams.AddIgnoredActor(this);
+
+	//Ray that runs on channel that only detects scenario manager
+	bool bHit = GetWorld()->LineTraceSingleByChannel(hitResult, StartLocation, EndLocation, ECC_GameTraceChannel1, collisionParams);
+
+
+
+	if (bHit)
+	{
+		AActor* HitActor = hitResult.GetActor();
+
+		if (HitActor)
+		{
+			if (HitActor->IsA(ATarget_Man::StaticClass())) // Check if the hit actor is a target
+			{
+				if (scenarioManager)
+				{
+					if (scenarioManager->GetScenario() == scenarioManager->tracking_scenario)
+					{
+						scenarioManager->GetScenario()->GetStats()->IncrementShotsHit();
+						scenarioManager->GetScenario()->GetStats()->IncrementShotsFired();
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		ATarget_Man* target = Cast<ATarget_Man>(UGameplayStatics::GetActorOfClass(GetWorld(), ATarget_Man::StaticClass()));
+		if (target)
+		{
+			// Target has just spawned, Work out initial angle required to turn
+			if (target->hasJustSpawned)
+			{
+				target->hasJustSpawned = false;
+				hasFirstShotAtTargetFired = false;
+
+				if (scenarioManager->GetScenario() == scenarioManager->chest_scenario)
+				{
+					float playerYaw = GetControlRotation().Yaw;
+					FVector ToTarget = (target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+					float targetYaw = ToTarget.Rotation().Yaw;
+
+					float TurnAngle = FMath::UnwindDegrees(targetYaw - playerYaw);
+
+					angle_required_to_turn = TurnAngle;
+					FString angleString = FString::Printf(TEXT("Angle Required To Turn: %f"), TurnAngle);
+					GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, angleString);
+
+					if (FMath::Sign(TurnAngle) > 0)
+					{
+						if (!RightArrowWidgetInstance->IsInViewport())
+						{
+						RightArrowWidgetInstance->AddToViewport();
+						}
+						if (LeftArrowWidgetInstance->IsInViewport())
+						{
+							LeftArrowWidgetInstance->RemoveFromViewport();
+						}
+					}
+					else if (FMath::Sign(TurnAngle) < 0)
+					{
+						if (!LeftArrowWidgetInstance->IsInViewport())
+						{
+							LeftArrowWidgetInstance->AddToViewport();
+						}
+						LeftArrowWidgetInstance->AddToViewport();
+						if (RightArrowWidgetInstance->IsInViewport())
+						{
+							RightArrowWidgetInstance->RemoveFromViewport();
+						}
+					}
+				}
+
+				if (scenarioManager->GetScenario() == scenarioManager->first_scenario)
+				{
+					float playerYaw = GetControlRotation().Yaw;
+					FVector ToTarget = (target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+					float targetYaw = ToTarget.Rotation().Yaw;
+
+					float TurnAngle = FMath::UnwindDegrees(targetYaw - playerYaw);
+
+					angle_required_to_turn = TurnAngle;
+				}
+
+#
+			}
+
+		if (scenarioManager)
+		{
+			if (scenarioManager->GetScenario() == scenarioManager->tracking_scenario)
+			{
+				float target_velocity = target->GetVelocity().X;
+				scenarioManager->GetScenario()->GetStats()->IncrementShotsFired();
+
+				FVector targetPosition = target->GetActorLocation(); // Get the targets location
+				FVector RayDirection = (EndLocation - StartLocation).GetSafeNormal(); // Get normalised direction of ray
+				FVector TargetToPlayer = targetPosition - StartLocation; // Calculate vector from target to player
+				float projectionLength = FVector::DotProduct(TargetToPlayer, RayDirection);// Project targetToPlayer vector onto ray direction to find projection length
+				FVector ClosestPointOnRay = StartLocation + RayDirection * projectionLength; // Find closest point on ray using projection length
+
+				//Zero Z values as vertical is not neccesarry 
+				FVector closestPointHoriontal = FVector(ClosestPointOnRay.X, ClosestPointOnRay.Y, 0.0f);
+				FVector targetPositionHorizontal = FVector(targetPosition.X, targetPosition.Y, 0.0f);
+
+				float distance_x = closestPointHoriontal.X - targetPosition.X; //Calculate horizontal x_axis offset
+
+				//The target is being overTracked
+				if(target_velocity > 0 && distance_x > 0)
+				{ 
+					scenarioManager->GetScenario()->GetStats()->TimeOvertracking++;
+				}
+				else if (target_velocity > 0 && distance_x < 0) //The target is under tracked
+				{
+					scenarioManager->GetScenario()->GetStats()->TimeUndertracking++;
+				
+				}
+
+				else if (target_velocity < 0 && distance_x < 0)
+				{
+					scenarioManager->GetScenario()->GetStats()->TimeOvertracking++;
+					FString over = FString::Printf(TEXT("Time Overtracking: %f"), scenarioManager->GetScenario()->GetStats()->TimeOvertracking);
+					GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, over);
+				}
+
+				else if (target_velocity < 0 && distance_x > 0)
+				{
+					scenarioManager->GetScenario()->GetStats()->TimeUndertracking++;
+					FString under = FString::Printf(TEXT("Time Undertracking: %f"), scenarioManager->GetScenario()->GetStats()->TimeUndertracking);
+					GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, under);
+				}
+					
+			}
+		}
 		}
 	}
 }

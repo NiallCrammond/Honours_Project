@@ -54,11 +54,6 @@ class SENSITIVITY_TOOL_API AScenario_Manager : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AScenario_Manager();
-
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
 	//Pointers for scenarios
 	Scenario_Base* base_scenario;
 	Scenario_Random_Man* first_scenario;
@@ -66,20 +61,26 @@ protected:
 	Tracking_Scenario* tracking_scenario;
 	Scenario_Chest* chest_scenario;
 
-	TArray<FString> scenario_names{ "random_man","Tracking_Scenario", "Chest_Scenario"};
-	int scenario_index = 0; 
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
 	int num_of_chests = 0;
 
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-	Scenario_Base* &GetScenario();
-	void SetScenario(FString scenario_name);
+	Scenario_Base* &GetScenario(); // Returns current Scenario
+	void SetScenario();
 	void NextScenario();
 	void PreviousScenario();
+	
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UUserWidget> ScenarioTextIcon;
 
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	UWidgetComponent* ScenarioNameWidget;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning", meta = (AllowPrivateAccess = "true"))
 	ATarget_Spawner* _spawner; 
@@ -108,5 +109,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scenario's", meta = (AllowPrivateAccess = "true"))
 	AActor* initial_spawn_point;
 	
+	int scenario_index = 0; 
 
 };

@@ -27,10 +27,10 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	bool OpenChest();
 	bool Interact();
-	void BroadcastChestOpened();
+
 
 	bool isChestOpen = false;
-	bool isInteracting;
+	bool isInteracting = false;
 	float interact_timer =0;
 	float time_to_open =1;
 

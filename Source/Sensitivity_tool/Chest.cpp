@@ -11,13 +11,13 @@ AChest::AChest()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
 	mesh_comp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh_Component"));
 	RootComponent = mesh_comp;
 	mesh_comp->SetStaticMesh(closed_chest);
-	//
-	//marker_mesh_comp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Marker_Mesh_Component"));
-	//marker_mesh_comp->SetStaticMesh(chest_marker);
 
+
+    //Set Chest Marker Configs
 	ChestIconWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("ChestIconWidget"));
 	ChestIconWidget->SetupAttachment(RootComponent);
 	ChestIconWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 100.f));
@@ -35,6 +35,7 @@ void AChest::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//Find Spawner
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATarget_Spawner::StaticClass(), FoundActors);
 
@@ -43,6 +44,7 @@ void AChest::BeginPlay()
 		_spawner = Cast<ATarget_Spawner>(FoundActors[0]);
 	}
 	
+	// Set Chest icon
 	if (ChestIcon && ChestIconWidget)
 	{
 		ChestIconWidget->SetWidgetClass(ChestIcon);
@@ -54,6 +56,7 @@ void AChest::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// Increment chest interact timer
 	if (isInteracting)
 	{
 		interact_timer+= DeltaTime;
@@ -63,17 +66,20 @@ void AChest::Tick(float DeltaTime)
 		interact_timer = 0;
 	}
 	
+	//If interacted long enough, open chest
 	if (interact_timer > time_to_open)
 	{
 	OpenChest();
 	}
 	isInteracting = false;
 
+	//Keep track of how long since chest opened
 	if (isChestOpen == true)
 	{
 		opened_timer += DeltaTime;
 	}
-
+	
+	//Destroy Chest if opened for enough time
 	if (opened_timer > time_until_destruct)
 	{
 		Destroy();
@@ -87,19 +93,11 @@ void AChest::Tick(float DeltaTime)
 			APawn* Player = PC->GetPawn();
 			if (Player)
 			{
+				//Rotate the Marker to face the player
 				FVector ChestLocation = ChestIconWidget->GetComponentLocation();
 				FVector PlayerLocation = Player->GetActorLocation();
 				FRotator LookAtRotation = (PlayerLocation - ChestLocation).Rotation();
-
 				FRotator WidgetRotation(0.f, LookAtRotation.Yaw, 0.f);
-	/*			FVector CameraLocation;
-				FRotator CameraRotation;
-				PC->GetPlayerViewPoint(CameraLocation, CameraRotation);
-
-				float distance = FVector::Dist(CameraLocation, GetActorLocation());
-				float scale = FMath::Clamp(distance / 1000.f, 0.5f, 2.0f);
-				ChestIconWidget->SetRelativeScale3D(FVector(scale));*/
-
 				ChestIconWidget->SetWorldRotation(WidgetRotation);
 			}
 		}
@@ -110,17 +108,15 @@ bool AChest::OpenChest()
 {
 	if (mesh_comp->GetStaticMesh() == closed_chest)
 	{
-		mesh_comp->SetStaticMesh(open_chest);
+		mesh_comp->SetStaticMesh(open_chest); //Set chest mesh to open
 		isChestOpen = true;
-		float random_number = FMath::RandRange(1.0f, 100.0f);
-		if (random_number < chance_to_spawn)
+		float random_number = FMath::RandRange(1.0f, 100.0f); // generate Random number
+		if (random_number < chance_to_spawn) // Compare Random number with spawm shance 
 		{
-		if (AScenario_Manager* manager = Cast<AScenario_Manager>(UGameplayStatics::GetActorOfClass(GetWorld(), AScenario_Manager::StaticClass())))
-		{
-			manager->GetScenario()->GetTargets().Add(_spawner->spawnTargetFromChest(this));
-		}
-
-
+			if (AScenario_Manager* manager = Cast<AScenario_Manager>(UGameplayStatics::GetActorOfClass(GetWorld(), AScenario_Manager::StaticClass())))
+			{
+				manager->GetScenario()->GetTargets().Add(_spawner->spawnTargetFromChest(this)); // Spawn chest
+			}
 		}
 		return true;
 	}

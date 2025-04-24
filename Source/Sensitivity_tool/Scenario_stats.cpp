@@ -93,5 +93,6 @@ void Scenario_stats::ResetStats()
 	headshotsHit = 0;
 	totalTargetsDestroyed= 0;
 	accuracy = 0;
-	distanceFromHead = 0;
 }
+
+

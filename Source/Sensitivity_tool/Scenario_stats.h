@@ -31,14 +31,20 @@ public:
 	void SetTotalTargetsDestroyed(float target_destroyed);
 	void ResetStats();
 
+
 	float shotsFired = 0;
 	float shotsHit = 0;
 	float headshotsHit = 0;
 	float totalTargetsDestroyed = 0;
 	float accuracy = 0;
-	float distanceFromHead = 0;
-	float single_spatial_offset = 0;
-	TArray<float> spatial_offset_array;
+	float overFlicks = 0;
+	float underFlicks = 0;
+	float averageOverflick = 0;
+	float averageUnderflick = 0;
+	float TimeOvertracking = 0;
+	float TimeUndertracking = 0;
+
+	TArray<TPair<float, float>> AngleCorrectionHistory;
 
 private:
 

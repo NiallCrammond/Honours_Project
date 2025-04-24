@@ -46,44 +46,54 @@ void Scenario_Random_Man::CleanUp()
 	}
 	stats->CalculateAccuracy();
 	UMyGameInstance* GameInstance = Cast<UMyGameInstance>(_spawner->GetWorld()->GetGameInstance());
-	GameInstance->rounds_played++;
+	GameInstance->Flicking_Rounds_Played++;
 
 	//Copy stat data into an array of stats 
-	GameInstance->Stat_Array.Add(new Scenario_stats(*stats));
+	GameInstance->Flicking_Array.Add(new Scenario_stats(*stats));
 
 	//If there is 3 rounds played, dispay the average performance
-	if (GameInstance->rounds_played >= 3)
+	if (GameInstance->Flicking_Rounds_Played >= 3)
 	{
-		GameInstance->calculateStatAverage();
-		FString accuracyString = FString::Printf(TEXT("Shots Fired Average: %f"), GameInstance->average_stats.GetShotsFired());
+		GameInstance->CalculateFlickingStatAverage();
+		FString accuracyString = FString::Printf(TEXT("Shots Fired Average: %f"), GameInstance->flicking_stats.GetShotsFired());
 
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, accuracyString);
 
-		FString roundsString = FString::Printf(TEXT("Rounds Played : %d"), GameInstance->rounds_played);
+		FString roundsString = FString::Printf(TEXT("Rounds Played : %d"), GameInstance->Flicking_Rounds_Played);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, roundsString);
 
-		float shotsFired = GameInstance->average_stats.GetShotsFired();
+		float shotsFired = GameInstance->flicking_stats.GetShotsFired();
 		FString firedString = FString::Printf(TEXT("Average Scenario Shots Fired: %f"),  shotsFired);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, firedString);
 
-		float shotsHit = GameInstance->average_stats.GetShotsHit();
+		float shotsHit = GameInstance->flicking_stats.GetShotsHit();
 		FString hitString = FString::Printf(TEXT("Average Scenario ShotsHit: %f"),shotsHit);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, hitString);
 
-		float targetsDestroyed = GameInstance->average_stats.GetTotalTargetsDestroyed();
+		float targetsDestroyed = GameInstance->flicking_stats.GetTotalTargetsDestroyed();
 		FString targetString = FString::Printf(TEXT("Average Scenario Targets Destroyed: %f"), targetsDestroyed);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, targetString);
 
-		float headshots = GameInstance->average_stats.GetHeadshotsHit();
+		float headshots = GameInstance->flicking_stats.GetHeadshotsHit();
 		FString headshotString = FString::Printf(TEXT("Average Scenario Headshots Hit: %f"), headshots);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, headshotString);
+
+		float overflick = GameInstance->flicking_stats.averageOverflick;
+		FString overflickString = FString::Printf(TEXT("Average Overflick Percentage: %f"), overflick);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, overflickString);
+
+
+		float underflick = GameInstance->flicking_stats.averageUnderflick;
+		FString underflickString = FString::Printf(TEXT("Average UnderFlick Percentage: %f"), underflick);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, underflickString);
+
 
 	}
 	//Display Single Scenario Stats
 	else
 	{
 		
-		FString roundsString = FString::Printf(TEXT("Rounds Played : %d"), GameInstance->rounds_played);
+		FString roundsString = FString::Printf(TEXT("Rounds Played : %d"), GameInstance->Flicking_Rounds_Played);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, roundsString);
 
 		float shotsFired= stats->GetShotsFired();

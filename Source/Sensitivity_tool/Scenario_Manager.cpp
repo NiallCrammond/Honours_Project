@@ -2,12 +2,23 @@
 
 
 #include "Scenario_Manager.h"
+#include "MyGameInstance.h"
 
 // Sets default values
 AScenario_Manager::AScenario_Manager()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	ScenarioNameWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("ScenarioNameWidget"));
+	ScenarioNameWidget->SetupAttachment(RootComponent);
+	ScenarioNameWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 100.f));
+	ScenarioNameWidget->SetWidgetSpace(EWidgetSpace::World);
+	ScenarioNameWidget->SetDrawAtDesiredSize(true);
+	ScenarioNameWidget->SetTwoSided(true);
+	ScenarioNameWidget->SetPivot(FVector2D(0.5f, 0.5f));
+	ScenarioNameWidget->SetWorldRotation(FRotator(0.f, 00.f, 0.f));
+
 
 }
 
@@ -22,14 +33,16 @@ void AScenario_Manager::BeginPlay()
 	tracking_scenario = new Tracking_Scenario(_spawner);
 	chest_scenario = new Scenario_Chest(_spawner);
 
+	ScenarioNameWidget->SetPivot(FVector2D(0.5f, 0.5f));
+	ScenarioNameWidget->SetWorldRotation(FRotator(0.f, 90.f, 0.f));
+
 	//Set scenario to be No active Scenario
 	base_scenario = no_scenario;
 	base_scenario->SetUp();
 
-	num_of_chests = _chests.Num();
-	FString chest_num = FString::Printf(TEXT("Chests: %d"), _chests.Num());
-    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, chest_num);
+	num_of_chests = _chests.Num(); // retrieve number of chests
 
+	//Loop through exisiting chest in scene, Retrieve their data and store in an array, remove chest once data is saved
 	for (int i = 0; i < num_of_chests; i++)
 	{
 		FChest_Data local_chest;
@@ -45,13 +58,19 @@ void AScenario_Manager::BeginPlay()
 		_chests[i]->Destroy();
 		data_array.Add(local_chest);
 	}
+
+	if (ScenarioNameWidget && ScenarioTextIcon)
+	{
+		ScenarioNameWidget->SetWidgetClass(ScenarioTextIcon);
+	}
 }
 
 // Called every frame
 void AScenario_Manager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
+
+	//Check for any deleted/invalud chests and remove from array of chests
 	for (int i = 0; i < _chests.Num(); i++)
 	{
 		AChest* chest = _chests[i];
@@ -77,16 +96,13 @@ void AScenario_Manager::Tick(float DeltaTime)
 			base_scenario->CleanUp();
 			base_scenario = no_scenario;
 		}
+		//End scenario when no chests left
 		else if (base_scenario == chest_scenario && _chests.Num() <=0)
 		{
 			base_scenario->CleanUp();
 			base_scenario = no_scenario;
 		}
 	}
-
-	/*FString chest_num = FString::Printf(TEXT("Chests: %d"), _chests.Num());
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, chest_num);*/
-
 }
 
 Scenario_Base* &AScenario_Manager::GetScenario()
@@ -95,19 +111,23 @@ Scenario_Base* &AScenario_Manager::GetScenario()
 }
 
 //Set Scenario by String
-void AScenario_Manager::SetScenario(FString scenario_name)
+void AScenario_Manager::SetScenario()
 {
+
+	UMyGameInstance* GameInstance = Cast<UMyGameInstance>(_spawner->GetWorld()->GetGameInstance());
+
+	//Set Scenario based on index, dont  allow i f3 instances of a scenario have been played
 	if (base_scenario == no_scenario)
 	{
-		if (scenario_index == 0)
+		if (scenario_index == 0 &&GameInstance->Flicking_Rounds_Played <3)
 	    {
 		base_scenario = first_scenario;
 	    }
-		else if (scenario_index == 1)
+		else if (scenario_index == 1 && GameInstance->Tracking_Rounds_Played < 3)
 	    {
 		base_scenario = tracking_scenario;
 	    }
-		else if (scenario_index == 2)
+		else if (scenario_index == 2 && GameInstance->Chest_Rounds_Played < 3)
 		{
 		base_scenario = chest_scenario;
 		}
@@ -118,7 +138,9 @@ void AScenario_Manager::SetScenario(FString scenario_name)
 
 void AScenario_Manager::NextScenario()
 {
-	if (scenario_index + 1 < scenario_names.Num())
+
+	//Increment Scenario Index
+	if (scenario_index + 1 < 3)
 	{
 		scenario_index++;
 	}
@@ -126,16 +148,14 @@ void AScenario_Manager::NextScenario()
 	{
 		scenario_index = 0;
 	}
-
-	FString index = FString::Printf(TEXT("Scenario Index: %d"), scenario_index);
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, index);
 }
 
 void AScenario_Manager::PreviousScenario()
 {
+	// Decrement Scenario Index
 	if (scenario_index == 0)
 	{
-		scenario_index = scenario_names.Num()-1;
+		scenario_index = 2;
 	}
 	else
 	{

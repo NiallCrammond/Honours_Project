@@ -19,12 +19,26 @@ class SENSITIVITY_TOOL_API UMyGameInstance : public UGameInstance
 public:
 	UMyGameInstance();
 	
-	TArray<Scenario_stats*> Stat_Array;
+	//Array stores individual scneario run stats
+	TArray<Scenario_stats*> Flicking_Array;
+	TArray<Scenario_stats*> Tracking_Stat_Array;
+	TArray<Scenario_stats*> Chest_Stat_Array;
 
-	void calculateStatAverage();
+	//Functions for Calculating average stats  per scenario after 3 attempts
+	void CalcualateTrackingStatAverage();
+	void CalculateFlickingStatAverage();
+	void CalculateChestStatAverage();
 
-	Scenario_stats average_stats;
-	int rounds_played =0;
+	//Average stats of each scenario
+	Scenario_stats tracking_stats;
+	Scenario_stats flicking_stats;
+	Scenario_stats chest_stats;
+
+	//Round count of each scenario
+	int Tracking_Rounds_Played =0;
+	int Flicking_Rounds_Played = 0;
+	int Chest_Rounds_Played = 0;
+
 private:
 
 };

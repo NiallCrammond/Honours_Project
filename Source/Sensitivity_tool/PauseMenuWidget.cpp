@@ -7,93 +7,39 @@
 #include "Blueprint/WidgetBlueprintLibrary.h"
 void UPauseMenuWidget::OnResumeButtonClicked()
 {
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-
-	if (UGameplayStatics::IsGamePaused(GetWorld()))
+	if (UGameplayStatics::IsGamePaused(GetWorld())) // If game is paused, resume game and remove UI From viewport
 	{
-		PC->SetPause(false);
+		player_controller->SetPause(false);
 		this->RemoveFromViewport();
-		PC->bShowMouseCursor = false;
+		player_controller->bShowMouseCursor = false;
 	}
 }
 
 void UPauseMenuWidget::OnBaseSensSliderChanged()
 {
-	ASensitivity_toolCharacter* player = Cast<ASensitivity_toolCharacter>(GetWorld()->GetFirstPlayerController());
-	if (!character)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("No Player"));
-
-	}
-
-	if (!Base_Sens_Slider)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("No Sens slider"));
-
-	}
-
 	if (character && Base_Sens_Slider)
 	{
-		float sliderValue = Base_Sens_Slider->GetValue();
-		character->Base_Sensitivity = sliderValue;
-		FText SensDisplay = FText::AsNumber(sliderValue);
-	    Base_Sensitivity_Value->SetText(SensDisplay);
-	}
-	else
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Actor has begun play!"));
-		}
+		float sliderValue = Base_Sens_Slider->GetValue(); //Retrieve value of slider
+		character->Base_Sensitivity = sliderValue; //Set Unaimed sens to value of slider
+		FText SensDisplay = FText::AsNumber(sliderValue); // Get slider value as text
+		Base_Sensitivity_Value->SetText(SensDisplay); // Update Text to display sensitivity
 	}
 }
 
 void UPauseMenuWidget::OnADSSensSliderChanged()
 {
-	ASensitivity_toolCharacter* player = Cast<ASensitivity_toolCharacter>(GetWorld()->GetFirstPlayerController());
-	if (!character)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("No Player"));
-
-	}
-
-	if (!ADS_Sens_Slider)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("No Sens slider"));
-
-	}
-
 	if (character && ADS_Sens_Slider)
 	{
-		float sliderValue = ADS_Sens_Slider->GetValue();
-		character->ADS_Sensitivity = sliderValue;
-		FText SensDisplay = FText::AsNumber(sliderValue);
-		ADS_Sensitivity_Value->SetText(SensDisplay);
+		float sliderValue = ADS_Sens_Slider->GetValue(); //Retrieve value of slider
+		character->ADS_Sensitivity = sliderValue; //Set ADS sens to value of slider
+		FText SensDisplay = FText::AsNumber(sliderValue); // Get slider value as text
+		ADS_Sensitivity_Value->SetText(SensDisplay); // Update Text to display sensitivity
 	}
-	else
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Actor has begun play!"));
-		}
-	}
+	
 }
 
 void UPauseMenuWidget::OnLeftDeadzoneChanged()
 {
-	ASensitivity_toolCharacter* player = Cast<ASensitivity_toolCharacter>(GetWorld()->GetFirstPlayerController());
-	if (!character)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("No Player"));
-
-	}
-
-	if (!Left_Deadzone_Slider)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("No left deadzone slider"));
-
-	}
-
 	if (character && Left_Deadzone_Slider)
 	{
 		float sliderValue = Left_Deadzone_Slider->GetValue();
@@ -105,19 +51,6 @@ void UPauseMenuWidget::OnLeftDeadzoneChanged()
 
 void UPauseMenuWidget::OnRightDeadzoneChanged()
 {
-	ASensitivity_toolCharacter* player = Cast<ASensitivity_toolCharacter>(GetWorld()->GetFirstPlayerController());
-	if (!character)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("No Player"));
-
-	}
-
-	if (!Right_Deadzone_Slider)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("No right deadzone slider"));
-
-	}
-
 	if (character && Right_Deadzone_Slider)
 	{
 		float sliderValue = Right_Deadzone_Slider->GetValue();
@@ -131,6 +64,11 @@ void UPauseMenuWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	//Get References for Player controller and character
+	player_controller = GetWorld()->GetFirstPlayerController();
+	character = Cast<ASensitivity_toolCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
+
+	//Bind fucntions to UI elements using delegates
 	if (Resume_Button)
 	{
 		FScriptDelegate ResumeDelegate;
@@ -172,10 +110,6 @@ void UPauseMenuWidget::NativeConstruct()
 		Right_Deadzone_Slider->OnValueChanged.AddUnique(RightDeadzoneSliderDelegate);
 	}
 
-
-
-	player_controller = GetWorld()->GetFirstPlayerController();
-	character = Cast<ASensitivity_toolCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
 }
 
 

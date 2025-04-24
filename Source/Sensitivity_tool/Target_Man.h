@@ -34,7 +34,10 @@ public:
 	void AdjustHealthByAmount(float val);
 	float GetHealth();
 
-private:
+	bool hasJustSpawned = true;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
 	float health = 100;
+private:
 	
 };

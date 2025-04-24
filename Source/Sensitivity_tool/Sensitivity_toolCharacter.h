@@ -31,6 +31,8 @@ class ASensitivity_toolCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
 	
+	//INPUT VARIABLES
+	
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
@@ -65,7 +67,8 @@ class ASensitivity_toolCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* PreviousScenarioAction;
 
-	//UI Widget
+	
+	//UI VARIABLES
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UUserWidget> CrossairWidgetClass;
 
@@ -76,10 +79,21 @@ class ASensitivity_toolCharacter : public ACharacter
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
-
 	UUserWidget* PauseMenuWidgetInstance;
 
-	TSharedPtr<SWindow> pauseMenu;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UUserWidget> RightArrowWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	UUserWidget* RightArrowWidgetInstance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UUserWidget> LeftArrowWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	UUserWidget* LeftArrowWidgetInstance;
+
+
 
 
 public:
@@ -87,7 +101,7 @@ public:
 
 	//Adjustable float for non-critical fire
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
-	float base_damage;
+	float base_damage= 35;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
 	float Base_Sensitivity= 1;
@@ -103,27 +117,32 @@ public:
 
 	//Adjustablle float for critical damage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Firing", meta = (AllowPrivateAccess = "true"))
-	float headshot_damage;
+	float headshot_damage =70;
 
 	//Default socket offset 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	FVector default_socket_offset;
+	FVector default_socket_offset = FVector(0.f, 0.f, 0.f);
 
 	//Aiming socket offset 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	FVector aiming_socket_offset;
+	FVector aiming_socket_offset =  FVector(0.f,0.f,0.f);
 
 	//Default FOV when player is not aiminf
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	float default_fov;
+	float default_fov = 0;
 	
 	//FOV used for aiming in
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	float aiming_fov;
+	float aiming_fov = 0;
 
 
 	AScenario_Manager* scenarioManager;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	float angle_required_to_turn = 0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	bool hasFirstShotAtTargetFired = false;
 public:
 	ASensitivity_toolCharacter();
 	
@@ -144,6 +163,8 @@ protected:
 	void PauseGame();
 	void NextScenario();
 	void PreviousScenario();
+
+	virtual void Tick(float dt) override;
 			
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -151,6 +172,7 @@ protected:
 	// To add mapping context
 	virtual void BeginPlay();
 
+	//Exponential functions that return turn rate
 	float CalculateADSSensitivity(float sensitivity);
 	float CalculateNormalSensitivity(float sensitivity);
 

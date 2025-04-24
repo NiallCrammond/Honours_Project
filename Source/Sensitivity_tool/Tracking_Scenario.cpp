@@ -26,21 +26,26 @@ void Tracking_Scenario::Update(float dt)
 	elapsedTime += dt;
 	currentTargetTime += dt;
 
-	if (currentTargetTime > 2)
-	{
+
 		for (auto target : _targets)
 		{
+			if ((target->GetVelocity().X < 10) && (target->GetVelocity().X > -10) && currentTargetTime >0.5)
+			{
+
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Removing Target"));
 			_targets.Remove(target);
 			target->Destroy();
 			currentTargetTime = 0;
+			}
 		}
-	}
+	
 
 	//If there isn't an active target, spawn one;
 	if (_targets.Num() < 1)
 	{
-		_targets.Add(_spawner->spawnMovingTargetInBox());
+		ATarget_Man* target = _spawner->spawnMovingTargetInBox();
+		_targets.Add(target);
+		
 		currentTargetTime = 0;
 	}
 }
@@ -59,44 +64,43 @@ void Tracking_Scenario::CleanUp()
 	}
 	stats->CalculateAccuracy();
 	UMyGameInstance* GameInstance = Cast<UMyGameInstance>(_spawner->GetWorld()->GetGameInstance());
-	GameInstance->rounds_played++;
+	GameInstance->Tracking_Rounds_Played++;
 
 	//Copy stat data into an array of stats 
-	GameInstance->Stat_Array.Add(new Scenario_stats(*stats));
+	GameInstance->Tracking_Stat_Array.Add(new Scenario_stats(*stats));
 
-	//If there is 3 rounds played, dispay the average performance
-	if (GameInstance->rounds_played >= 3)
+	//If there is 3 rounds played, dispay the tracking performance
+	if (GameInstance->Tracking_Rounds_Played >= 3)
 	{
-		GameInstance->calculateStatAverage();
-		FString accuracyString = FString::Printf(TEXT("Shots Fired Average: %f"), GameInstance->average_stats.GetShotsFired());
 
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, accuracyString);
-
-		FString roundsString = FString::Printf(TEXT("Rounds Played : %d"), GameInstance->rounds_played);
+		FString roundsString = FString::Printf(TEXT("Rounds Played : %d"), GameInstance->Tracking_Rounds_Played);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, roundsString);
 
-		float shotsFired = GameInstance->average_stats.GetShotsFired();
+		float shotsFired = GameInstance->tracking_stats.GetShotsFired();
 		FString firedString = FString::Printf(TEXT("Average Scenario Shots Fired: %f"), shotsFired);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, firedString);
 
-		float shotsHit = GameInstance->average_stats.GetShotsHit();
+		float shotsHit = GameInstance->tracking_stats.GetShotsHit();
 		FString hitString = FString::Printf(TEXT("Average Scenario ShotsHit: %f"), shotsHit);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, hitString);
 
-		float targetsDestroyed = GameInstance->average_stats.GetTotalTargetsDestroyed();
-		FString targetString = FString::Printf(TEXT("Average Scenario Targets Destroyed: %f"), targetsDestroyed);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, targetString);
+		GameInstance->CalcualateTrackingStatAverage();
+		FString accuracyString = FString::Printf(TEXT("Average Accuracy: %f"), GameInstance->tracking_stats.GetAccuracy());
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, accuracyString);
 
-		float headshots = GameInstance->average_stats.GetHeadshotsHit();
-		FString headshotString = FString::Printf(TEXT("Average Scenario Headshots Hit: %f"), headshots);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, headshotString);
+		float underTrack = GameInstance->tracking_stats.TimeUndertracking;
+		FString underString = FString::Printf(TEXT("Percentage Of time Undertracking: %f"), underTrack);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, underString);
 
+		float overTrack = GameInstance->tracking_stats.TimeOvertracking;
+		FString overString = FString::Printf(TEXT("Percentage Of time Undertracking: %f"), overTrack);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, overString);
 	}
 	//Display Single Scenario Stats
 	else
 	{
 
-		FString roundsString = FString::Printf(TEXT("Rounds Played : %d"), GameInstance->rounds_played);
+		FString roundsString = FString::Printf(TEXT("Rounds Played : %d"), GameInstance->Tracking_Rounds_Played);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, roundsString);
 
 		float shotsFired = stats->GetShotsFired();
@@ -111,15 +115,13 @@ void Tracking_Scenario::CleanUp()
 		FString accuracyString = FString::Printf(TEXT("Previous Scenario Accuracy: %f"), accuracy);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, accuracyString);
 
-		float targetsDestroyed = stats->GetTotalTargetsDestroyed();
-		FString targetString = FString::Printf(TEXT("Previous Scenario Targets Destroyed: %f"), targetsDestroyed);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, targetString);
+		float underTrack = stats->TimeUndertracking;
+		FString underString = FString::Printf(TEXT("Percentage Of time Undertracking: %f"), underTrack);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, underString);
 
-		float headshots = stats->GetHeadshotsHit();
-		FString headshotString = FString::Printf(TEXT("Previous Scenario Headshots Hit: %f"), headshots);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, headshotString);
-
-
+		float overTrack = stats->TimeOvertracking;
+		FString overString = FString::Printf(TEXT("Percentage Of time Undertracking: %f"), overTrack);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, overString);
 	}
 
 	delete stats;
