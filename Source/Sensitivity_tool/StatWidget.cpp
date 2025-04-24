@@ -114,8 +114,8 @@ void UStatWidget::ProcessFeedback(FString flickFeedback, FString trackingFeedbac
 	}
 
 
-	ADSChange = CombinedChange;
-	baseChange = ADSChange + FMath::Sign(ADSChange);
+	baseChange = CombinedChange;
+	 ADSChange = baseChange + FMath::Sign(baseChange);
 
 	FString SensChangeSummary = FString::Printf(TEXT("After reviewing the averages of your performances per scenario, we recommend a sensitivity change of : \n Base = %+d \n ADS = %+d"), baseChange, ADSChange);
 
